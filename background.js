@@ -178,7 +178,7 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
 
   const promptId = menuId.replace(/^(sel_|clip_)/, "");
   const data = await browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "prompts"]);
-  const { apiKey, provider = "openai", model, endpoint } = data;
+  const { apiKey, provider = "openai", model, endpoint, clipboardMode = "clipboard" } = data;
   const prompts = data.prompts || [];
   const promptObj = prompts.find(p => p.id === promptId);
   if (!promptObj) return;
@@ -249,10 +249,10 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
       return;
     }
 
-    // Write result back to clipboard and notify
+    // Write result back to clipboard and optionally paste
     try {
       await browser.tabs.sendMessage(tab.id,
-        { action: "writeClipboard", text: result },
+        { action: "writeClipboard", text: result, paste: clipboardMode === "paste" },
         { frameId }
       );
     } catch (e) {}

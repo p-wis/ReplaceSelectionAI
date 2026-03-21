@@ -26,6 +26,9 @@
     .btn-add { padding: 5px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; }
     .btn-add:hover { background: #1d4ed8; }
     .btn-add:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-icon { padding: 5px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; color: #475569; cursor: pointer; white-space: nowrap; }
+    .btn-icon:hover { background: #e2e8f0; }
+    .prompts-actions { display: flex; gap: 6px; align-items: center; }
     .prompt-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 8px 8px; overflow: hidden; }
     .prompt-card-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid #f1f5f9; }
     .prompt-card-header input.name-input { flex: 1; padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 12px; font-weight: 500; outline: none; background: #f8fafc; }
@@ -70,13 +73,27 @@
       <button class="btn-primary" id="saveSettings">Save</button>
     </div>
     <div class="provider-hint" id="providerHint"></div>
+
+    <label class="field-label" style="margin-top:12px">After processing clipboard</label>
+    <div class="field-row">
+      <select id="clipboardMode">
+        <option value="paste">Paste result into active field</option>
+        <option value="clipboard">Keep result in clipboard</option>
+      </select>
+    </div>
   </div>
   <div class="prompts-header">
     <span>Prompts (<span id="promptCount">0</span>/5)</span>
-    <button class="btn-add" id="addPrompt">+ Add prompt</button>
+    <div class="prompts-actions">
+      <button class="btn-icon" id="exportPrompts">⬇ Export</button>
+      <button class="btn-icon" id="importPrompts">⬆ Import</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" />
+      <button class="btn-add" id="addPrompt">+ Add prompt</button>
+    </div>
   </div>
   <div id="promptsList"></div>
   <div id="status"></div>
   <script src="popup.js"></script>
 </body>
 </html>
+<!-- Export/Import added via str_replace below -->

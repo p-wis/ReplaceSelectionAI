@@ -55,7 +55,7 @@ document.getElementById("saveSettings").addEventListener("click", () => {
   if (!apiKey) { showStatus("Please enter an API key", "#dc2626"); return; }
   if (!model) { showStatus("Please enter a model name", "#dc2626"); return; }
   if (provider === "openai-compatible" && !endpoint) { showStatus("Please enter an endpoint URL", "#dc2626"); return; }
-  browser.storage.local.set({ provider, apiKey, model, endpoint }).then(() => showStatus("Settings saved ✓"));
+  browser.storage.local.set({ provider, apiKey, model, endpoint, clipboardMode: document.getElementById("clipboardMode").value }).then(() => showStatus("Settings saved ✓"));
 });
 
 function makeEl(tag, props, children) {
@@ -112,12 +112,53 @@ addBtn.addEventListener("click", () => {
   promptsList.lastElementChild.querySelector(".name-input").focus();
 });
 
-browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "prompts"]).then(data => {
+browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "clipboardMode", "prompts"]).then(data => {
   if (data.apiKey) document.getElementById("apiKey").value = data.apiKey;
   if (data.provider) providerSel.value = data.provider;
   if (data.model) modelInput.value = data.model;
   if (data.endpoint) endpointInput.value = data.endpoint;
+  if (data.clipboardMode) document.getElementById("clipboardMode").value = data.clipboardMode;
   prompts = data.prompts || [];
   updateProviderUI();
   renderPrompts();
+});
+
+// Export
+document.getElementById("exportPrompts").addEventListener("click", () => {
+  if (prompts.length === 0) { showStatus("No prompts to export", "#dc2626"); return; }
+  const json = JSON.stringify({ version: 1, prompts }, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "replaceselectionai-prompts.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  showStatus("Exported ✓");
+});
+
+// Import
+document.getElementById("importPrompts").addEventListener("click", () => {
+  document.getElementById("importFile").click();
+});
+
+document.getElementById("importFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.prompts || !Array.isArray(data.prompts)) throw new Error("Invalid format");
+      const imported = data.prompts.filter(p => p.name && p.text).slice(0, MAX_PROMPTS);
+      prompts = imported.map(p => ({ id: generateId(), name: p.name, text: p.text }));
+      savePrompts();
+      renderPrompts();
+      showStatus(`Imported ${prompts.length} prompt(s) ✓`);
+    } catch (err) {
+      showStatus("Import failed: invalid file", "#dc2626");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
 });

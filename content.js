@@ -75,7 +75,25 @@ if (typeof window.__rsai_loaded === "undefined") {
     if (msg.action === "writeClipboard") {
       try {
         await navigator.clipboard.writeText(msg.text);
-        showToast("Result copied to clipboard ✓", "success");
+        if (msg.paste) {
+          // Focus active editable element and paste
+          const el = document.activeElement;
+          if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            el.setRangeText(msg.text, start, end, "end");
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+            showToast("Done ✓", "success");
+          } else if (el && el.isContentEditable) {
+            document.execCommand("insertText", false, msg.text);
+            showToast("Done ✓", "success");
+          } else {
+            showToast("Result copied to clipboard ✓", "success");
+          }
+        } else {
+          showToast("Result copied to clipboard ✓", "success");
+        }
       } catch (e) {
         showToast("Could not write to clipboard", "error");
       }
