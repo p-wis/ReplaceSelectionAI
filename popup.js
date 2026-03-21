@@ -12,21 +12,9 @@ const providerHint = document.getElementById("providerHint");
 let prompts = [];
 
 const PROVIDER_DEFAULTS = {
-  openai: {
-    model: "gpt-4o-mini",
-    endpoint: "https://api.openai.com/v1",
-    hint: "Get your API key at platform.openai.com/api-keys"
-  },
-  anthropic: {
-    model: "claude-haiku-4-5-20251001",
-    endpoint: "https://api.anthropic.com/v1",
-    hint: "Get your API key at console.anthropic.com — note: Anthropic uses a different API format"
-  },
-  "openai-compatible": {
-    model: "",
-    endpoint: "",
-    hint: "Enter the endpoint URL and model name as specified by your provider (Groq, Mistral, Together AI, etc.)"
-  }
+  openai: { model: "gpt-4o-mini", endpoint: "https://api.openai.com/v1", hint: "Get your API key at platform.openai.com/api-keys" },
+  anthropic: { model: "claude-haiku-4-5-20251001", endpoint: "https://api.anthropic.com/v1", hint: "Get your API key at console.anthropic.com — note: Anthropic uses a different API format" },
+  "openai-compatible": { model: "", endpoint: "", hint: "Enter the endpoint URL and model name as specified by your provider (Groq, Mistral, Together AI, etc.)" }
 };
 
 function showStatus(msg, color) {
@@ -47,10 +35,9 @@ function savePrompts() {
 
 function updateProviderUI() {
   const p = providerSel.value;
-  const def = PROVIDER_DEFAULTS[p];
-  providerHint.textContent = def.hint;
+  providerHint.textContent = PROVIDER_DEFAULTS[p].hint;
   endpointRow.style.display = p === "openai-compatible" ? "block" : "none";
-  if (!modelInput.value) modelInput.value = def.model;
+  if (!modelInput.value) modelInput.value = PROVIDER_DEFAULTS[p].model;
 }
 
 providerSel.addEventListener("change", () => {
@@ -65,14 +52,10 @@ document.getElementById("saveSettings").addEventListener("click", () => {
   const apiKey = document.getElementById("apiKey").value.trim();
   const model = modelInput.value.trim();
   const endpoint = endpointInput.value.trim();
-
   if (!apiKey) { showStatus("Please enter an API key", "#dc2626"); return; }
   if (!model) { showStatus("Please enter a model name", "#dc2626"); return; }
   if (provider === "openai-compatible" && !endpoint) { showStatus("Please enter an endpoint URL", "#dc2626"); return; }
-
-  browser.storage.local.set({ provider, apiKey, model, endpoint }).then(() => {
-    showStatus("Settings saved ✓");
-  });
+  browser.storage.local.set({ provider, apiKey, model, endpoint }).then(() => showStatus("Settings saved ✓"));
 });
 
 function makeEl(tag, props, children) {
@@ -88,27 +71,17 @@ function renderPrompts() {
   addBtn.disabled = prompts.length >= MAX_PROMPTS;
 
   if (prompts.length === 0) {
-    const empty = makeEl("div", { className: "empty-state", textContent: 'No prompts yet. Click "+ Add prompt" to get started.' });
-    promptsList.appendChild(empty);
+    promptsList.appendChild(makeEl("div", { className: "empty-state", textContent: 'No prompts yet. Click "+ Add prompt" to get started.' }));
     return;
   }
 
   prompts.forEach(p => {
-    const nameInput = makeEl("input", {
-      className: "name-input",
-      type: "text",
-      placeholder: "Context menu label...",
-      value: p.name
-    });
-
+    const nameInput = makeEl("input", { className: "name-input", type: "text", placeholder: "Context menu label...", value: p.name });
     const saveBtn = makeEl("button", { className: "btn-save-card", textContent: "Save" });
     const deleteBtn = makeEl("button", { className: "btn-delete", textContent: "Remove" });
-
     const cardHeader = makeEl("div", { className: "prompt-card-header" }, [nameInput, saveBtn, deleteBtn]);
-
     const textarea = makeEl("textarea", { placeholder: "Prompt text..." });
     textarea.value = p.text;
-
     const card = makeEl("div", { className: "prompt-card" }, [cardHeader, textarea]);
     promptsList.appendChild(card);
 

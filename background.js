@@ -1,7 +1,7 @@
 async function buildMenus() {
   await browser.contextMenus.removeAll();
   const data = await browser.storage.local.get("prompts");
-  const prompts = data.prompts || [];
+  const prompts = (data.prompts || []).filter(p => p.name && p.text);
 
   if (prompts.length === 0) {
     browser.contextMenus.create({
@@ -13,14 +13,41 @@ async function buildMenus() {
     return;
   }
 
+  // Section 1: selected text
+  browser.contextMenus.create({
+    id: "header-selection",
+    title: "ReplaceSelectionAI — selection",
+    contexts: ["editable"],
+    enabled: false
+  });
   prompts.forEach(p => {
-    if (p.name && p.text) {
-      browser.contextMenus.create({
-        id: "prompt_" + p.id,
-        title: p.name,
-        contexts: ["editable"]
-      });
-    }
+    browser.contextMenus.create({
+      id: "sel_" + p.id,
+      title: p.name,
+      contexts: ["editable"]
+    });
+  });
+
+  // Separator
+  browser.contextMenus.create({
+    id: "separator",
+    type: "separator",
+    contexts: ["editable"]
+  });
+
+  // Section 2: clipboard
+  browser.contextMenus.create({
+    id: "header-clipboard",
+    title: "ReplaceSelectionAI — clipboard",
+    contexts: ["editable"],
+    enabled: false
+  });
+  prompts.forEach(p => {
+    browser.contextMenus.create({
+      id: "clip_" + p.id,
+      title: p.name,
+      contexts: ["editable"]
+    });
   });
 }
 
@@ -30,7 +57,7 @@ browser.runtime.onMessage.addListener((msg) => {
   if (msg.action === "reloadMenus") buildMenus();
 });
 
-async function callAPI(settings, promptText, selectedText) {
+async function callAPI(settings, promptText, inputText) {
   const { provider, apiKey, model, endpoint } = settings;
 
   if (provider === "anthropic") {
@@ -44,7 +71,7 @@ async function callAPI(settings, promptText, selectedText) {
       body: JSON.stringify({
         model: model || "claude-haiku-4-5-20251001",
         max_tokens: 4096,
-        messages: [{ role: "user", content: `${promptText}\n\n${selectedText}` }]
+        messages: [{ role: "user", content: `${promptText}\n\n${inputText}` }]
       })
     });
     if (!response.ok) {
@@ -65,7 +92,7 @@ async function callAPI(settings, promptText, selectedText) {
       },
       body: JSON.stringify({
         model: model || "gpt-4o-mini",
-        messages: [{ role: "user", content: `${promptText}\n\n${selectedText}` }],
+        messages: [{ role: "user", content: `${promptText}\n\n${inputText}` }],
         temperature: 0
       })
     });
@@ -102,10 +129,54 @@ function showToastInFrame(tabId, frameId, message, type) {
   });
 }
 
-browser.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (!info.menuItemId.startsWith("prompt_")) return;
-  const promptId = info.menuItemId.replace("prompt_", "");
+async function injectIfNeeded(tabId, frameId) {
+  try {
+    const response = await browser.tabs.sendMessage(tabId, { action: "ping" }, { frameId });
+    if (response === true) return;
+  } catch (e) {}
+  try {
+    await browser.tabs.executeScript(tabId, { file: "content.js", frameId });
+    await new Promise(r => setTimeout(r, 80));
+  } catch (e) {}
+}
 
+async function findTargetFrame(tabId) {
+  const frames = await browser.webNavigation.getAllFrames({ tabId });
+  for (const frame of frames) {
+    await injectIfNeeded(tabId, frame.frameId);
+    try {
+      const response = await browser.tabs.sendMessage(tabId,
+        { action: "getLastSelection" },
+        { frameId: frame.frameId }
+      );
+      if (response && response.text && response.text.trim()) {
+        return { frameId: frame.frameId, selectedText: response.text };
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function findAnyFrame(tabId) {
+  // Returns first accessible frame (for clipboard mode — we just need somewhere to show toast and paste)
+  const frames = await browser.webNavigation.getAllFrames({ tabId });
+  for (const frame of frames) {
+    await injectIfNeeded(tabId, frame.frameId);
+    try {
+      await browser.tabs.sendMessage(tabId, { action: "ping" }, { frameId: frame.frameId });
+      return frame.frameId;
+    } catch (e) {}
+  }
+  return 0;
+}
+
+browser.contextMenus.onClicked.addListener(async (info, tab) => {
+  const menuId = info.menuItemId;
+  const isSelection = menuId.startsWith("sel_");
+  const isClipboard = menuId.startsWith("clip_");
+  if (!isSelection && !isClipboard) return;
+
+  const promptId = menuId.replace(/^(sel_|clip_)/, "");
   const data = await browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "prompts"]);
   const { apiKey, provider = "openai", model, endpoint } = data;
   const prompts = data.prompts || [];
@@ -119,49 +190,71 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  try {
-    await browser.tabs.executeScript(tab.id, { file: "content.js", allFrames: true });
-  } catch (e) {}
-  await new Promise(r => setTimeout(r, 100));
+  if (isSelection) {
+    // --- SELECTION MODE ---
+    const found = await findTargetFrame(tab.id);
 
-  const frames = await browser.webNavigation.getAllFrames({ tabId: tab.id });
-  let selectedText = "", targetFrameId = null;
+    if (!found) {
+      browser.tabs.executeScript(tab.id, {
+        code: `alert("ReplaceSelectionAI: please select some text before choosing an action.");`
+      });
+      return;
+    }
 
-  for (const frame of frames) {
+    const { frameId, selectedText } = found;
+    showToastInFrame(tab.id, frameId, "Processing...", "loading");
+
+    let result = "";
+    try {
+      result = await callAPI({ provider, apiKey, model, endpoint }, promptObj.text, selectedText);
+    } catch (e) {
+      showToastInFrame(tab.id, frameId, `Error: ${e.message}`, "error");
+      return;
+    }
+
+    try {
+      await browser.tabs.sendMessage(tab.id,
+        { action: "replaceSelection", result },
+        { frameId }
+      );
+    } catch (e) {}
+
+  } else {
+    // --- CLIPBOARD MODE ---
+    const frameId = await findAnyFrame(tab.id);
+    showToastInFrame(tab.id, frameId, "Reading clipboard...", "loading");
+
+    // Read clipboard via content.js
+    let clipboardText = "";
     try {
       const response = await browser.tabs.sendMessage(tab.id,
-        { action: "getLastSelection" },
-        { frameId: frame.frameId }
+        { action: "readClipboard" },
+        { frameId }
       );
-      if (response && response.text && response.text.trim()) {
-        selectedText = response.text;
-        targetFrameId = frame.frameId;
-        break;
-      }
+      clipboardText = response && response.text ? response.text : "";
+    } catch (e) {}
+
+    if (!clipboardText.trim()) {
+      showToastInFrame(tab.id, frameId, "Clipboard is empty", "error");
+      return;
+    }
+
+    showToastInFrame(tab.id, frameId, "Processing...", "loading");
+
+    let result = "";
+    try {
+      result = await callAPI({ provider, apiKey, model, endpoint }, promptObj.text, clipboardText);
+    } catch (e) {
+      showToastInFrame(tab.id, frameId, `Error: ${e.message}`, "error");
+      return;
+    }
+
+    // Write result back to clipboard and notify
+    try {
+      await browser.tabs.sendMessage(tab.id,
+        { action: "writeClipboard", text: result },
+        { frameId }
+      );
     } catch (e) {}
   }
-
-  if (!selectedText.trim()) {
-    browser.tabs.executeScript(tab.id, {
-      code: `alert("ReplaceSelectionAI: please select some text before choosing an action.");`
-    });
-    return;
-  }
-
-  showToastInFrame(tab.id, targetFrameId, "Processing...", "loading");
-
-  let result = "";
-  try {
-    result = await callAPI({ provider, apiKey, model, endpoint }, promptObj.text, selectedText);
-  } catch (e) {
-    showToastInFrame(tab.id, targetFrameId, `Error: ${e.message}`, "error");
-    return;
-  }
-
-  try {
-    await browser.tabs.sendMessage(tab.id,
-      { action: "replaceSelection", result },
-      { frameId: targetFrameId }
-    );
-  } catch (e) {}
 });

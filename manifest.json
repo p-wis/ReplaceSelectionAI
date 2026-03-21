@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "ReplaceSelectionAI",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Select text in any editable field, process it with AI (OpenAI, Claude, or any OpenAI-compatible provider), and replace it with the result. Define your own prompts via the extension popup.",
   "permissions": [
     "activeTab",

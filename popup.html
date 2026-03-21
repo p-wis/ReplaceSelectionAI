@@ -4,219 +4,48 @@
   <meta charset="UTF-8">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      width: 440px;
-      font-family: system-ui, sans-serif;
-      font-size: 13px;
-      color: #1e293b;
-      background: #f1f5f9;
-    }
-
-    .header {
-      padding: 14px 16px 12px;
-      background: white;
-      border-bottom: 1px solid #e2e8f0;
-    }
+    body { width: 440px; font-family: system-ui, sans-serif; font-size: 13px; color: #1e293b; background: #f1f5f9; }
+    .header { padding: 14px 16px 12px; background: white; border-bottom: 1px solid #e2e8f0; }
     .header h2 { font-size: 14px; font-weight: 600; color: #0f172a; }
     .header p { font-size: 11px; color: #64748b; margin-top: 2px; }
-
-    .ai-section {
-      background: white;
-      padding: 12px 16px 14px;
-      border-bottom: 1px solid #e2e8f0;
-      margin-bottom: 8px;
-    }
-    .field-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 5px;
-      display: block;
-    }
-    .field-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+    .ai-section { background: white; padding: 12px 16px 14px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px; }
+    .field-label { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; display: block; }
+    .field-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
     .field-row:last-child { margin-bottom: 0; }
-
-    select {
-      flex: 1;
-      padding: 7px 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 12px;
-      outline: none;
-      background: #f8fafc;
-      color: #1e293b;
-      cursor: pointer;
-    }
+    select { flex: 1; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; outline: none; background: #f8fafc; color: #1e293b; cursor: pointer; }
     select:focus { border-color: #3b82f6; background: white; }
-
-    .model-input {
-      flex: 1;
-      padding: 7px 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: monospace;
-      outline: none;
-      background: #f8fafc;
-    }
+    .model-input { flex: 1; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-family: monospace; outline: none; background: #f8fafc; }
     .model-input:focus { border-color: #3b82f6; background: white; }
-    .model-input:disabled { color: #94a3b8; background: #f1f5f9; cursor: not-allowed; }
-
-    .api-input {
-      flex: 1;
-      padding: 7px 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: monospace;
-      outline: none;
-      background: #f8fafc;
-    }
+    .api-input { flex: 1; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-family: monospace; outline: none; background: #f8fafc; }
     .api-input:focus { border-color: #3b82f6; background: white; }
-
-    .btn-primary {
-      padding: 7px 14px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-    }
+    .btn-primary { padding: 7px 14px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
     .btn-primary:hover { background: #1d4ed8; }
-
-    .provider-hint {
-      font-size: 10px;
-      color: #94a3b8;
-      margin-top: 4px;
-    }
-
-    .prompts-header {
-      padding: 8px 16px 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .prompts-header span {
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .btn-add {
-      padding: 5px 12px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-    }
+    .provider-hint { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+    .prompts-header { padding: 8px 16px 6px; display: flex; justify-content: space-between; align-items: center; }
+    .prompts-header span { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .btn-add { padding: 5px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; }
     .btn-add:hover { background: #1d4ed8; }
     .btn-add:disabled { background: #94a3b8; cursor: not-allowed; }
-
-    .prompt-card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      margin: 0 8px 8px;
-      overflow: hidden;
-    }
-    .prompt-card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px 8px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .prompt-card-header input.name-input {
-      flex: 1;
-      padding: 5px 8px;
-      border: 1px solid #e2e8f0;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: 500;
-      outline: none;
-      background: #f8fafc;
-    }
+    .prompt-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 8px 8px; overflow: hidden; }
+    .prompt-card-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid #f1f5f9; }
+    .prompt-card-header input.name-input { flex: 1; padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 12px; font-weight: 500; outline: none; background: #f8fafc; }
     .prompt-card-header input.name-input:focus { border-color: #3b82f6; background: white; }
-    .btn-delete {
-      padding: 5px 8px;
-      background: none;
-      border: 1px solid #fca5a5;
-      border-radius: 5px;
-      color: #ef4444;
-      font-size: 11px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
+    .btn-delete { padding: 5px 8px; background: none; border: 1px solid #fca5a5; border-radius: 5px; color: #ef4444; font-size: 11px; cursor: pointer; white-space: nowrap; }
     .btn-delete:hover { background: #fef2f2; }
-    .btn-save-card {
-      padding: 5px 10px;
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      border-radius: 5px;
-      color: #334155;
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-    }
+    .btn-save-card { padding: 5px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 5px; color: #334155; font-size: 11px; font-weight: 500; cursor: pointer; white-space: nowrap; }
     .btn-save-card:hover { background: #e2e8f0; }
-
-    .prompt-card textarea {
-      width: 100%;
-      height: 100px;
-      padding: 8px 12px;
-      border: none;
-      border-top: 1px solid #f1f5f9;
-      font-size: 12px;
-      font-family: system-ui, sans-serif;
-      line-height: 1.5;
-      resize: vertical;
-      outline: none;
-      color: #1e293b;
-      background: white;
-      display: block;
-    }
+    .prompt-card textarea { width: 100%; height: 100px; padding: 8px 12px; border: none; border-top: 1px solid #f1f5f9; font-size: 12px; font-family: system-ui, sans-serif; line-height: 1.5; resize: vertical; outline: none; color: #1e293b; background: white; display: block; }
     .prompt-card textarea:focus { background: #fafcff; }
-
-    .empty-state {
-      text-align: center;
-      padding: 20px;
-      color: #94a3b8;
-      font-size: 12px;
-    }
-
-    #status {
-      padding: 8px 16px;
-      font-size: 11px;
-      text-align: center;
-      min-height: 26px;
-      color: #16a34a;
-    }
+    .empty-state { text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; }
+    #status { padding: 8px 16px; font-size: 11px; text-align: center; min-height: 26px; color: #16a34a; }
   </style>
 </head>
 <body>
-
   <div class="header">
     <h2>ReplaceSelectionAI</h2>
     <p>Select text → right-click → choose action from context menu</p>
   </div>
-
   <div class="ai-section">
-
     <label class="field-label">AI Provider</label>
     <div class="field-row">
       <select id="provider">
@@ -225,36 +54,29 @@
         <option value="openai-compatible">OpenAI-compatible (Groq, Mistral, Together…)</option>
       </select>
     </div>
-
     <label class="field-label">Model</label>
     <div class="field-row">
       <input class="model-input" type="text" id="model" placeholder="e.g. gpt-4o-mini" />
     </div>
-
     <div id="endpointRow" style="display:none">
       <label class="field-label">Endpoint URL</label>
       <div class="field-row">
         <input class="model-input" type="text" id="endpoint" placeholder="https://api.groq.com/openai/v1" />
       </div>
     </div>
-
     <label class="field-label">API Key</label>
     <div class="field-row">
       <input class="api-input" type="password" id="apiKey" placeholder="sk-..." />
       <button class="btn-primary" id="saveSettings">Save</button>
     </div>
     <div class="provider-hint" id="providerHint"></div>
-
   </div>
-
   <div class="prompts-header">
     <span>Prompts (<span id="promptCount">0</span>/5)</span>
     <button class="btn-add" id="addPrompt">+ Add prompt</button>
   </div>
-
   <div id="promptsList"></div>
   <div id="status"></div>
-
   <script src="popup.js"></script>
 </body>
 </html>
