@@ -46,6 +46,44 @@ async function buildMenus() {
 
 buildMenus();
 
+// Install default prompts on first install
+browser.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason !== "install") return;
+  const data = await browser.storage.local.get("prompts");
+  if (data.prompts && data.prompts.length > 0) return;
+
+  const defaultPrompts = [
+    {
+      id: "default_1",
+      name: "Fix grammar",
+      text: "Fix all grammar, spelling, and punctuation errors in the following text. Return only the corrected text, no explanations."
+    },
+    {
+      id: "default_2",
+      name: "Translate to English",
+      text: "Translate the following text to English. Return only the translation, no explanations."
+    },
+    {
+      id: "default_3",
+      name: "Summarize",
+      text: "Summarize the following text in 2-3 sentences. Return only the summary, no explanations."
+    },
+    {
+      id: "default_4",
+      name: "Make professional",
+      text: "Rewrite the following text in a professional, formal tone suitable for business communication. Return only the rewritten text, no explanations."
+    },
+    {
+      id: "default_5",
+      name: "Bullet points",
+      text: "Convert the following text into a clear, concise bullet point list. Return only the bullet points, no explanations."
+    }
+  ];
+
+  await browser.storage.local.set({ prompts: defaultPrompts });
+  buildMenus();
+});
+
 browser.runtime.onMessage.addListener((msg) => {
   if (msg.action === "reloadMenus") buildMenus();
 });
