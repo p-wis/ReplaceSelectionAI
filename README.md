@@ -2,6 +2,12 @@
 
 A Firefox extension that processes selected text (or clipboard content) with AI and automatically replaces it in place — without leaving the page or switching tabs.
 
+## Screenshots
+
+![Context menu workflow](screenshots/01-context-menu.png)
+
+![Extension settings](screenshots/02-settings.png)
+
 ## How it works
 
 1. Select text in any editable field
