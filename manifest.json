@@ -7,6 +7,7 @@
     "activeTab",
     "contextMenus",
     "storage",
+    "clipboardRead",
     "clipboardWrite",
     "webNavigation",
     "<all_urls>"

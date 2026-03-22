@@ -177,7 +177,7 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!isSelection && !isClipboard) return;
 
   const promptId = menuId.replace(/^(sel_|clip_)/, "");
-  const data = await browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "prompts"]);
+  const data = await browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "clipboardMode", "prompts"]);
   const { apiKey, provider = "openai", model, endpoint, clipboardMode = "clipboard" } = data;
   const prompts = data.prompts || [];
   const promptObj = prompts.find(p => p.id === promptId);
@@ -221,18 +221,39 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
 
   } else {
     // --- CLIPBOARD MODE ---
-    const frameId = await findAnyFrame(tab.id);
+    // Find frame that has a remembered active element
+    const frames = await browser.webNavigation.getAllFrames({ tabId: tab.id });
+    let targetFrameId = 0;
+
+    for (const frame of frames) {
+      await injectIfNeeded(tab.id, frame.frameId);
+      try {
+        const response = await browser.tabs.sendMessage(tab.id,
+          { action: "hasActiveElement" },
+          { frameId: frame.frameId }
+        );
+        if (response === true) {
+          targetFrameId = frame.frameId;
+          break;
+        }
+      } catch (e) {
+      }
+    }
+
+    const frameId = targetFrameId;
     showToastInFrame(tab.id, frameId, "Reading clipboard...", "loading");
 
-    // Read clipboard via content.js
+    // Read clipboard via injected async script — works even after focus loss
     let clipboardText = "";
     try {
-      const response = await browser.tabs.sendMessage(tab.id,
-        { action: "readClipboard" },
-        { frameId }
-      );
-      clipboardText = response && response.text ? response.text : "";
-    } catch (e) {}
+      const results = await browser.tabs.executeScript(tab.id, {
+        frameId,
+        code: `(async () => { try { return await navigator.clipboard.readText(); } catch(e) { return ""; } })()`
+      });
+      clipboardText = results && results[0] ? results[0] : "";
+    } catch (e) {
+      clipboardText = "";
+    }
 
     if (!clipboardText.trim()) {
       showToastInFrame(tab.id, frameId, "Clipboard is empty", "error");
@@ -251,10 +272,11 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
 
     // Write result back to clipboard and optionally paste
     try {
-      await browser.tabs.sendMessage(tab.id,
+      const wr = await browser.tabs.sendMessage(tab.id,
         { action: "writeClipboard", text: result, paste: clipboardMode === "paste" },
         { frameId }
       );
-    } catch (e) {}
+    } catch (e) {
+    }
   }
 });

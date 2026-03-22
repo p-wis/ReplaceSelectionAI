@@ -2,6 +2,14 @@ if (typeof window.__rsai_loaded === "undefined") {
   window.__rsai_loaded = true;
 
   let lastSelection = null;
+  let lastActiveElement = null;
+
+  document.addEventListener("mousedown", () => {
+    const el = document.activeElement;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
+      lastActiveElement = el;
+    }
+  });
 
   function captureSelection() {
     const el = document.activeElement;
@@ -36,6 +44,10 @@ if (typeof window.__rsai_loaded === "undefined") {
 
   browser.runtime.onMessage.addListener(async (msg) => {
     if (msg.action === "ping") return true;
+
+    if (msg.action === "hasActiveElement") {
+      return lastActiveElement !== null;
+    }
 
     if (msg.action === "showError") {
       showToast(msg.message, "error");
@@ -76,9 +88,9 @@ if (typeof window.__rsai_loaded === "undefined") {
       try {
         await navigator.clipboard.writeText(msg.text);
         if (msg.paste) {
-          // Focus active editable element and paste
-          const el = document.activeElement;
+          const el = lastActiveElement;
           if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+            el.focus();
             const start = el.selectionStart;
             const end = el.selectionEnd;
             el.setRangeText(msg.text, start, end, "end");
@@ -86,6 +98,7 @@ if (typeof window.__rsai_loaded === "undefined") {
             el.dispatchEvent(new Event("change", { bubbles: true }));
             showToast("Done ✓", "success");
           } else if (el && el.isContentEditable) {
+            el.focus();
             document.execCommand("insertText", false, msg.text);
             showToast("Done ✓", "success");
           } else {

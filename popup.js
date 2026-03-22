@@ -47,6 +47,12 @@ providerSel.addEventListener("change", () => {
   updateProviderUI();
 });
 
+document.getElementById("clipboardMode").addEventListener("change", () => {
+  browser.storage.local.set({ clipboardMode: document.getElementById("clipboardMode").value });
+});
+
+
+
 document.getElementById("saveSettings").addEventListener("click", () => {
   const provider = providerSel.value;
   const apiKey = document.getElementById("apiKey").value.trim();
@@ -117,7 +123,9 @@ browser.storage.local.get(["apiKey", "provider", "model", "endpoint", "clipboard
   if (data.provider) providerSel.value = data.provider;
   if (data.model) modelInput.value = data.model;
   if (data.endpoint) endpointInput.value = data.endpoint;
-  if (data.clipboardMode) document.getElementById("clipboardMode").value = data.clipboardMode;
+  // Set clipboardMode without triggering change event
+  const cm = document.getElementById("clipboardMode");
+  cm.value = data.clipboardMode || "clipboard";
   prompts = data.prompts || [];
   updateProviderUI();
   renderPrompts();
