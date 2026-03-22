@@ -13,39 +13,32 @@ async function buildMenus() {
     return;
   }
 
-  // Section 1: selected text
+  // Top-level: Process selection
   browser.contextMenus.create({
     id: "header-selection",
-    title: "ReplaceSelectionAI — selection",
-    contexts: ["editable"],
-    enabled: false
+    title: "Selection",
+    contexts: ["editable"]
   });
   prompts.forEach(p => {
     browser.contextMenus.create({
       id: "sel_" + p.id,
       title: p.name,
+      parentId: "header-selection",
       contexts: ["editable"]
     });
   });
 
-  // Separator
-  browser.contextMenus.create({
-    id: "separator",
-    type: "separator",
-    contexts: ["editable"]
-  });
-
-  // Section 2: clipboard
+  // Top-level: Process clipboard
   browser.contextMenus.create({
     id: "header-clipboard",
-    title: "ReplaceSelectionAI — clipboard",
-    contexts: ["editable"],
-    enabled: false
+    title: "Clipboard",
+    contexts: ["editable"]
   });
   prompts.forEach(p => {
     browser.contextMenus.create({
       id: "clip_" + p.id,
       title: p.name,
+      parentId: "header-clipboard",
       contexts: ["editable"]
     });
   });
