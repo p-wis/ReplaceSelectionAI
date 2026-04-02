@@ -64,10 +64,18 @@ if (typeof window.__rsai_loaded === "undefined") {
       if (lastSelection.type === "input" && lastSelection.el) {
         const el = lastSelection.el;
         el.focus();
-        el.setRangeText(msg.result, lastSelection.start, lastSelection.end, "select");
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-        showToast("Done ✓", "success");
+        // Set selection range first
+        el.setSelectionRange(lastSelection.start, lastSelection.end);
+        // Use execCommand so the replacement is added to the native undo stack
+        // Cmd+Z / Ctrl+Z will restore the original text automatically
+        const success = document.execCommand("insertText", false, msg.result);
+        if (!success) {
+          // Fallback for browsers where execCommand is not supported
+          el.setRangeText(msg.result, lastSelection.start, lastSelection.end, "select");
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        showToast("Done ✓  —  ⌘Z to undo", "success");
       } else {
         await navigator.clipboard.writeText(msg.result);
         showToast("Copied to clipboard — paste manually (⌘V / Ctrl+V)", "success");
@@ -93,14 +101,18 @@ if (typeof window.__rsai_loaded === "undefined") {
             el.focus();
             const start = el.selectionStart;
             const end = el.selectionEnd;
-            el.setRangeText(msg.text, start, end, "end");
-            el.dispatchEvent(new Event("input", { bubbles: true }));
-            el.dispatchEvent(new Event("change", { bubbles: true }));
-            showToast("Done ✓", "success");
+            el.setSelectionRange(start, end);
+            const success = document.execCommand("insertText", false, msg.text);
+            if (!success) {
+              el.setRangeText(msg.text, start, end, "end");
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            showToast("Done ✓  —  ⌘Z to undo", "success");
           } else if (el && el.isContentEditable) {
             el.focus();
             document.execCommand("insertText", false, msg.text);
-            showToast("Done ✓", "success");
+            showToast("Done ✓  —  ⌘Z to undo", "success");
           } else {
             showToast("Result copied to clipboard ✓", "success");
           }
