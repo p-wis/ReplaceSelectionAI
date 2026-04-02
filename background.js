@@ -1,7 +1,10 @@
 async function buildMenus() {
   await browser.contextMenus.removeAll();
-  const data = await browser.storage.local.get("prompts");
+  const data = await browser.storage.local.get(["prompts", "clipboardMode"]);
   const prompts = (data.prompts || []).filter(p => p.name && p.text);
+  const clipboardTitle = data.clipboardMode === "paste"
+    ? "Rewrite clipboard & paste"
+    : "Rewrite clipboard";
 
   if (prompts.length === 0) {
     browser.contextMenus.create({
@@ -16,7 +19,7 @@ async function buildMenus() {
   // Top-level: Process selection
   browser.contextMenus.create({
     id: "header-selection",
-    title: "Selection",
+    title: "Rewrite selection",
     contexts: ["editable"]
   });
   prompts.forEach(p => {
@@ -31,7 +34,7 @@ async function buildMenus() {
   // Top-level: Process clipboard
   browser.contextMenus.create({
     id: "header-clipboard",
-    title: "Clipboard",
+    title: clipboardTitle,
     contexts: ["editable"]
   });
   prompts.forEach(p => {

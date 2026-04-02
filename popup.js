@@ -48,7 +48,9 @@ providerSel.addEventListener("change", () => {
 });
 
 document.getElementById("clipboardMode").addEventListener("change", () => {
-  browser.storage.local.set({ clipboardMode: document.getElementById("clipboardMode").value });
+  browser.storage.local.set({ clipboardMode: document.getElementById("clipboardMode").value }).then(() => {
+    browser.runtime.sendMessage({ action: "reloadMenus" });
+  });
 });
 
 
