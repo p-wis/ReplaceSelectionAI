@@ -3,11 +3,33 @@ if (typeof window.__rsai_loaded === "undefined") {
 
   let lastSelection = null;
   let lastActiveElement = null;
+  let lastCursorPos = null;
 
-  document.addEventListener("mousedown", () => {
+  function updateActiveElement() {
     const el = document.activeElement;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
       lastActiveElement = el;
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+        lastCursorPos = { start: el.selectionStart, end: el.selectionEnd };
+      }
+    }
+  }
+
+  // Track on right-click — capture before context menu opens
+  document.addEventListener("contextmenu", updateActiveElement);
+  // Also track on regular interactions
+  document.addEventListener("mouseup", () => {
+    updateActiveElement();
+    captureSelection();
+  });
+  document.addEventListener("keyup", (e) => {
+    updateActiveElement();
+  });
+  document.addEventListener("selectionchange", () => {
+    const el = document.activeElement;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      lastActiveElement = el;
+      lastCursorPos = { start: el.selectionStart, end: el.selectionEnd };
     }
   });
 
@@ -26,7 +48,6 @@ if (typeof window.__rsai_loaded === "undefined") {
     }
   }
 
-  document.addEventListener("mouseup", captureSelection);
   document.addEventListener("keyup", (e) => {
     if (e.shiftKey || e.key === "End" || e.key === "Home" ||
         e.key === "ArrowLeft" || e.key === "ArrowRight" ||
@@ -99,8 +120,8 @@ if (typeof window.__rsai_loaded === "undefined") {
           const el = lastActiveElement;
           if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
             el.focus();
-            const start = el.selectionStart;
-            const end = el.selectionEnd;
+            const start = lastCursorPos ? lastCursorPos.start : el.selectionStart;
+            const end = lastCursorPos ? lastCursorPos.end : el.selectionEnd;
             el.setSelectionRange(start, end);
             const success = document.execCommand("insertText", false, msg.text);
             if (!success) {
