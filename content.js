@@ -16,7 +16,10 @@ if (typeof window.__rsai_loaded === "undefined") {
   }
 
   // Track on right-click — capture before context menu opens
-  document.addEventListener("contextmenu", updateActiveElement);
+  document.addEventListener("contextmenu", () => {
+    updateActiveElement();
+    captureSelection();
+  });
   // Also track on regular interactions
   document.addEventListener("mouseup", () => {
     updateActiveElement();
