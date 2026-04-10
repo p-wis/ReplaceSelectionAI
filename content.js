@@ -116,6 +116,29 @@ if (typeof window.__rsai_loaded === "undefined") {
       }
     }
 
+    if (msg.action === "pasteText") {
+      const el = lastActiveElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+        el.focus();
+        const start = lastCursorPos ? lastCursorPos.start : el.selectionStart;
+        const end = lastCursorPos ? lastCursorPos.end : el.selectionEnd;
+        el.setSelectionRange(start, end);
+        const success = document.execCommand("insertText", false, msg.text);
+        if (!success) {
+          el.setRangeText(msg.text, start, end, "end");
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        showToast("Done ✓  —  ⌘Z to undo", "success");
+      } else if (el && el.isContentEditable) {
+        el.focus();
+        document.execCommand("insertText", false, msg.text);
+        showToast("Done ✓  —  ⌘Z to undo", "success");
+      } else {
+        showToast("Result copied to clipboard ✓", "success");
+      }
+    }
+
     if (msg.action === "writeClipboard") {
       try {
         await navigator.clipboard.writeText(msg.text);

@@ -304,13 +304,24 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
       return;
     }
 
-    // Write result back to clipboard and optionally paste
+    // Write result to clipboard from background (no page focus required)
     try {
-      const wr = await browser.tabs.sendMessage(tab.id,
-        { action: "writeClipboard", text: result, paste: clipboardMode === "paste" },
-        { frameId }
-      );
-    } catch (e) {
+      await browser.tabs.executeScript(tab.id, {
+        frameId,
+        code: `navigator.clipboard.writeText(${JSON.stringify(result)})`
+      });
+    } catch (e) {}
+
+    // If paste mode — send text to content.js for insertion
+    if (clipboardMode === "paste") {
+      try {
+        await browser.tabs.sendMessage(tab.id,
+          { action: "pasteText", text: result },
+          { frameId }
+        );
+      } catch (e) {}
+    } else {
+      showToastInFrame(tab.id, frameId, "Result copied to clipboard ✓", "success");
     }
   }
 });
